@@ -47,7 +47,8 @@ type HubOptionCookie struct {
 }
 
 
-
+// 微信小程序和 app 场景下可能在登录成功时可能需要手动创建 SessionID
+// 所以提供 NewSessionID 发放
 func (hub Hub) NewSessionID(ctx context.Context) (sessionID string, err error) {
 	storeKey :=  uuid.New().String()
 	var sessionIDBytes []byte
