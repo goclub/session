@@ -35,9 +35,13 @@ func main() {
 		}),
 		StoreKeyPrefix: "project_name",
 	})
+	// 线上环境不要使用这里的 key, 应当读取配置文件或配置中心的key
+	secureKey := []byte("e9a2f9cbfab74abaa472ff7385dd8224")
+	if len(secureKey) != 32 {
+		panic("secureKey length must be 32")
+	}
 	sessHub := sess.NewHub(redisStore, sess.HubOption{
-		// SecurityKey len must be 32 线上环境不要使用这里的 key
-		SecurityKey: []byte("e9a2f9cbfab74abaa472ff7385dd8224"),
+		SecureKey: secureKey,
 		Cookie:      sess.HubOptionCookie{
 			Name: "project_name_session",
 		},
