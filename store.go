@@ -5,6 +5,8 @@ import (
 	"context"
 )
 
+// 满足 Store 接口的结构体可作为 goclub/sessoin 的数据层
+// 已经封装好的有 sess.NewRedisStore()
 type Store interface {
 	InitSession(ctx context.Context, storeKey string, sessionTTL time.Duration) (err error)
 	StoreKeyExists(ctx context.Context, storeKey string) (existed bool, err error)

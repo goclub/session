@@ -26,6 +26,7 @@ func (m RedisStore) getKey(storeKey string) (key string){
 func (m RedisStore) InitSession(ctx context.Context, storeKey string, sessionTTL time.Duration) (err error) {
 	key := m.getKey(storeKey)
 	client := m.option.Client
+	// lua 保证原子性
 	// hset key __goclub_session_create_time time.Now() 是为了让 key 存在
 	script := `
 	local key = KEYS[1]
@@ -109,4 +110,3 @@ func (m RedisStore) Destroy(ctx context.Context,storeKey string) (err error){
 	}
 	return
 }
-

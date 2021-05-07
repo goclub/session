@@ -46,7 +46,7 @@ func main() {
 			Name: "project_name_session",
 		},
 		Security:    sess.DefaultSecurity{},
-		SessionTTL:  time.Hour * 1,
+		SessionTTL:  2 * time.Hour,
 	})
 	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 		ctx := request.Context()

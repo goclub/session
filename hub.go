@@ -24,12 +24,21 @@ func NewHub(store Store, option HubOption) *Hub {
 }
 
 type HubOption struct {
+	// sessionID 与 storeKey 的加密解密秘钥
+	// 设置长度为 32的 []byte
 	SecureKey []byte
+	// cookie 相关设置
 	Cookie HubOptionCookie
+	// 加密方式，不填则为 goclub/sesion 默认 aes 加密
 	Security Security
+	// sesison 过期时间，建议为2小时
 	SessionTTL time.Duration
+	// 当sessionID 解码为 storeKey 后在 store 中不存在时触发
+	// 可结合监控系统排查恶意攻击或 sessionID 过期
+	OnStoreKeyDoesNotExist func(sessionID string, storeKey string)
 }
 type HubOptionCookie struct {
+	// Name 建议设置为 项目名 + "_sesison_id"
 	Name string
 	Path   string
 	Domain string
@@ -81,6 +90,9 @@ func (hub Hub) getSession(ctx context.Context, sessionID string, writer http.Res
 	// 此处的验证可避免 key 过期或恶意猜测key进行攻击
 	has, err = session.existed(ctx) ; if err != nil {
 		return
+	}
+	if has == false && hub.option.OnStoreKeyDoesNotExist != nil {
+		hub.option.OnStoreKeyDoesNotExist(sessionID, storeKey)
 	}
 	return
 }
