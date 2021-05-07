@@ -52,14 +52,14 @@ func (hub Hub) NewSessionID(ctx context.Context) (sessionID string, err error) {
 	return sessionID, nil
 }
 
-func (hub Hub) GetSessionBySessionID(ctx context.Context, sessionID string) (session Session, expired bool, err error) {
+func (hub Hub) GetSessionBySessionID(ctx context.Context, sessionID string) (session Session, sessionExpired bool, err error) {
 	session, has, err := hub.getSession(ctx, sessionID, nil) ; if err != nil {
 	    return
 	}
 	// GetSessionBySessionID 的场景一般是微信小程序或 app
 	// 这种场景当 key 错误应当返回key已过期 ，便于调用方告知客户端需要重新登录
 	// 过期 = key 不存在
-	expired = (has == false)
+	sessionExpired = (has == false)
 	return
 }
 func (hub Hub) getSession(ctx context.Context, sessionID string, writer http.ResponseWriter) (session Session, has bool, err error) {

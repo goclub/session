@@ -22,7 +22,7 @@ func TestTestCookie(t *testing.T) {
 	})
 	TestCookie(t, redisStore, sess.HubOption{
 		// SecurityKey len must be 32
-		SecurityKey: []byte("e9a2f9cbfab74abaa472ff7385dd8224"),
+		SecureKey: []byte("e9a2f9cbfab74abaa472ff7385dd8224"),
 		Cookie:      sess.HubOptionCookie{
 			Name: "project_name_session",
 		},
