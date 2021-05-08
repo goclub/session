@@ -31,7 +31,7 @@ func (hub Hub) GetSessionByReadWriter( ctx context.Context, rw SessionIDReadWrit
 	// session 如果过期和恶意攻击的情况 会 hasSession == false
 	// (可以在已经 NewSessionID 之后清除 store 的数据以测试这种情况,例如 redis flushdb)
 	if hasSession == false {
-		// 这种两种情况都生成新的 session
+		// 过期和恶意攻击的两种情况都生成新的 session
 		sessionID, err :=  hub.NewSessionID(ctx) ; if err != nil {
 			return Session{},err
 		}
