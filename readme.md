@@ -16,8 +16,9 @@ import "github.com/goclub/session"
 
 1. store = NewRedisStore()
 2. hub = NewHub(store)
-3. hub.GetSessionByCookie()
+3. session = hub.GetSessionByCookie()
 4. session.Get()
+5. session.Set()
 
 连接 redis:
 
