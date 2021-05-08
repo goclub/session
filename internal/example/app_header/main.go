@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/go-redis/redis/v8"
-	sess "github.com/goclub/session"
+	"github.com/goclub/session"
 	"io/ioutil"
 	"log"
 	"net/http"

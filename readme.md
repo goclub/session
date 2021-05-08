@@ -1,6 +1,10 @@
-# session
+# goclub/session
 
 > 安全易用的 session golang 库
+
+```
+import "github.com/goclub/session"
+```
 
 ## 特色
 
@@ -10,7 +14,9 @@
 
 ## 示例
 
-**使用 cookie 自动传递 session **
+**使用 cookie 自动传递 session ** 
+
+> 先运行，再体验，再阅读源码
 
 [cookie](./internal/example/cookie/main.go)
 ```.go
@@ -109,6 +115,8 @@ func main() {
 ```
 
 **前端手动传递 session**
+
+> 先运行，再体验，再阅读源码
 
 [app](./internal/example/app/main.go)
 ```.go
@@ -217,8 +225,9 @@ func main() {
 
 ```
 
-
 **前端使用 header 半自动传递 session**
+
+> 先运行，再体验，再阅读源码
 
 [app_header](./internal/example/app_header/main.go)
 ```.go
@@ -227,7 +236,7 @@ package main
 import (
 	"fmt"
 	"github.com/go-redis/redis/v8"
-	sess "github.com/goclub/session"
+	"github.com/goclub/session"
 	"io/ioutil"
 	"log"
 	"net/http"
