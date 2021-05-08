@@ -10,10 +10,313 @@
 
 ## 示例
 
-- 使用 cookie 自动传递 session [cookie](./internal/example/cookie/main.go)
-- 前端手动传递 session [app](./internal/example/app/main.go)
-- 前端使用 header 半自动传递 session [app_header](./internal/example/app_header/main.go)
+**使用 cookie 自动传递 session **
 
+[cookie](./internal/example/cookie/main.go)
+```.go
+package main
+
+import (
+	"fmt"
+	"github.com/go-redis/redis/v8"
+	sess "github.com/goclub/session"
+	"log"
+	"net/http"
+	"strconv"
+	"time"
+)
+
+
+
+// 为了便于理解，演示代码中使用 panic 粗糙的处理错误
+// 更好的方法：https://github.com/goclub/error
+func HandleError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+// 为了便于理解，简化实现
+// 更好的方法：https://github.com/goclub/http
+func WriteString(w http.ResponseWriter, s string) {
+	_, err := w.Write([]byte(s)) ; if err != nil {
+		w.WriteHeader(500)
+		log.Print(err)
+	}
+}
+func main() {
+	redisStore := sess.NewRedisStore(sess.RedisStoreOption{
+		Client: redis.NewClient(&redis.Options{
+			Network: "tcp",
+			Addr: "127.0.0.1:6379",
+		}),
+		StoreKeyPrefix: "project_name",
+	})
+	// 线上环境不要使用这里的 key, 应当读取配置文件或配置中心的key
+	secureKey := []byte("e9a2f9cbfab74abaa472ff7385dd8224")
+	if len(secureKey) != 32 {
+		panic("secureKey length must be 32")
+	}
+	sessHub := sess.NewHub(redisStore, sess.HubOption{
+		SecureKey: secureKey,
+		Cookie:      sess.HubOptionCookie{
+			Name: "project_name_session",
+		},
+		Security:    sess.DefaultSecurity{},
+		SessionTTL:  2 * time.Hour,
+	})
+	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		ctx := request.Context()
+		session, err := sessHub.GetSessionByCookie(ctx, writer, request) ; HandleError(err)
+		query := request.URL.Query()
+		switch query.Get("kind") {
+		case "id":
+			WriteString(writer, session.ID())
+			return
+		case "get":
+			value, hasValue, err := session.Get(ctx, "name") ; HandleError(err)
+			WriteString(writer, fmt.Sprintf("value: %s hasValue: %b",value, hasValue))
+			return
+		case "set":
+			value := "nimo" + strconv.FormatInt(int64(time.Now().Second()), 10)
+			err := session.Set(ctx, "name", value) ; HandleError(err)
+		case "ttl":
+			ttl, err := session.SessionRemainingTTL(ctx) ; HandleError(err)
+			WriteString(writer, ttl.String())
+			return
+		case "delete":
+			err := session.Delete(ctx, "name") ; HandleError(err)
+		case "destroy":
+			err := session.Destroy(ctx) ; HandleError(err)
+		default:
+			WriteString(writer, `
+				<h1>使用 cookie 自动传递 session id</h1>
+				<a href="?kind=id">id</a>
+				<a href="?kind=get">get</a>
+				<a href="?kind=set">set</a>
+				<a href="?kind=ttl">ttl</a>
+				<a href="?kind=delete">delete</a>
+				<a href="?kind=destroy">destroy</a>
+			`)
+			return
+		}
+		WriteString(writer, "ok")
+	})
+	addr := ":2222"
+	log.Print("http://127.0.0.1" + addr)
+	log.Print(http.ListenAndServe(addr, nil))
+}
+
+```
+
+**前端手动传递 session**
+
+[app](./internal/example/app/main.go)
+```.go
+package main
+
+import (
+	"fmt"
+	"github.com/go-redis/redis/v8"
+	sess "github.com/goclub/session"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"path"
+	"strconv"
+	"time"
+)
+
+
+
+// 为了便于理解，演示代码中使用 panic 粗糙的处理错误
+// 更好的方法：https://github.com/goclub/error
+func HandleError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+// 为了便于理解，简化实现
+// 更好的方法：https://github.com/goclub/http
+func WriteString(w http.ResponseWriter, s string) {
+	_, err := w.Write([]byte(s)) ; if err != nil {
+		w.WriteHeader(500)
+		log.Print(err)
+	}
+}
+func main() {
+	redisStore := sess.NewRedisStore(sess.RedisStoreOption{
+		Client: redis.NewClient(&redis.Options{
+			Network: "tcp",
+			Addr: "127.0.0.1:6379",
+		}),
+		StoreKeyPrefix: "project_name",
+	})
+	// 线上环境不要使用这里的 key, 应当读取配置文件或配置中心的key
+	secureKey := []byte("e9a2f9cbfab74abaa472ff7385dd8224")
+	if len(secureKey) != 32 {
+		panic("secureKey length must be 32")
+	}
+	sessHub := sess.NewHub(redisStore, sess.HubOption{
+		SecureKey: secureKey,
+		Cookie:      sess.HubOptionCookie{
+			Name: "project_name_session",
+		},
+		Security:    sess.DefaultSecurity{},
+		SessionTTL:  2 * time.Hour,
+	})
+	html, err := ioutil.ReadFile(path.Join(os.Getenv("GOPATH"), "src/github.com/goclub/session/internal/example/app/index.html")) ; HandleError(err)
+	http.HandleFunc("/login", func(writer http.ResponseWriter, request *http.Request) {
+		ctx := request.Context()
+		sessionID, err := sessHub.NewSessionID(ctx) ; HandleError(err)
+		WriteString(writer, sessionID)
+		return
+	})
+	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		ctx := request.Context()
+		// 为了便于演示，通过 query 传递 sessionID ,实际开发中应该在 request.Body(json) 或 header 传递 sessionID
+		query := request.URL.Query()
+		kind := query.Get("kind")
+		// 渲染测试用 html
+		if kind == "" {
+			WriteString(writer, string(html))
+			return
+		}
+		sessionID := query.Get("sessionID")
+		session, sessionExpired, err := sessHub.GetSessionBySessionID(ctx, sessionID) ; HandleError(err)
+		if sessionExpired {
+			WriteString(writer, "session 已过期，请访问\n/NewSessionID\n 重新获取")
+			return
+		}
+		switch query.Get("kind") {
+		case "id":
+			WriteString(writer, session.ID())
+			return
+		case "get":
+			value, hasValue, err := session.Get(ctx, "name") ; HandleError(err)
+			WriteString(writer, fmt.Sprintf("value: %s hasValue: %b",value, hasValue))
+			return
+		case "set":
+			value := "nimo" + strconv.FormatInt(int64(time.Now().Second()), 10)
+			err := session.Set(ctx, "name", value) ; HandleError(err)
+		case "ttl":
+			ttl, err := session.SessionRemainingTTL(ctx) ; HandleError(err)
+			WriteString(writer, ttl.String())
+			return
+		case "delete":
+			err := session.Delete(ctx, "name") ; HandleError(err)
+		case "destroy":
+			err := session.Destroy(ctx) ; HandleError(err)
+		}
+		WriteString(writer, "ok")
+	})
+	addr := ":3333"
+	log.Print("http://127.0.0.1" + addr)
+	log.Print(http.ListenAndServe(addr, nil))
+}
+
+```
+
+
+**前端使用 header 半自动传递 session**
+
+[app_header](./internal/example/app_header/main.go)
+```.go
+package main
+
+import (
+	"fmt"
+	"github.com/go-redis/redis/v8"
+	sess "github.com/goclub/session"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"path"
+	"strconv"
+	"time"
+)
+
+
+
+// 为了便于理解，演示代码中使用 panic 粗糙的处理错误
+// 更好的方法：https://github.com/goclub/error
+func HandleError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+// 为了便于理解，简化实现
+// 更好的方法：https://github.com/goclub/http
+func WriteString(w http.ResponseWriter, s string) {
+	_, err := w.Write([]byte(s)) ; if err != nil {
+		w.WriteHeader(500)
+		log.Print(err)
+	}
+}
+func main() {
+	redisStore := sess.NewRedisStore(sess.RedisStoreOption{
+		Client: redis.NewClient(&redis.Options{
+			Network: "tcp",
+			Addr: "127.0.0.1:6379",
+		}),
+		StoreKeyPrefix: "project_name",
+	})
+	// 线上环境不要使用这里的 key, 应当读取配置文件或配置中心的key
+	secureKey := []byte("e9a2f9cbfab74abaa472ff7385dd8224")
+	if len(secureKey) != 32 {
+		panic("secureKey length must be 32")
+	}
+	sessHub := sess.NewHub(redisStore, sess.HubOption{
+		SecureKey: secureKey,
+		Header: sess.HubOptionHeader{
+			Key: "token",
+		},
+		Security:    sess.DefaultSecurity{},
+		SessionTTL:  2 * time.Hour,
+	})
+	html, err := ioutil.ReadFile(path.Join(os.Getenv("GOPATH"), "src/github.com/goclub/session/internal/example/app_header/index.html")) ; HandleError(err)
+	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		ctx := request.Context()
+		// 为了便于演示，通过 query 传递 sessionID ,实际开发中应该在 request.Body(json) 或 header 传递 sessionID
+		query := request.URL.Query()
+		kind := query.Get("kind")
+		// 渲染测试用 html
+		if kind == "" {
+			WriteString(writer, string(html))
+			return
+		}
+		// 使用 GetSessionByHeader 时，前端需要对 header 做同步处理
+		// 前端请参考 $GOPATH/src/github.com/goclub/session/internal/example/app_header/index.html
+		session, err := sessHub.GetSessionByHeader(ctx, writer, request.Header) ; HandleError(err)
+		switch query.Get("kind") {
+		case "id":
+			WriteString(writer, session.ID())
+			return
+		case "get":
+			value, hasValue, err := session.Get(ctx, "name") ; HandleError(err)
+			WriteString(writer, fmt.Sprintf("value: %s hasValue: %b",value, hasValue))
+			return
+		case "set":
+			value := "nimo" + strconv.FormatInt(int64(time.Now().Second()), 10)
+			err := session.Set(ctx, "name", value) ; HandleError(err)
+		case "ttl":
+			ttl, err := session.SessionRemainingTTL(ctx) ; HandleError(err)
+			WriteString(writer, ttl.String())
+			return
+		case "delete":
+			err := session.Delete(ctx, "name") ; HandleError(err)
+		case "destroy":
+			err := session.Destroy(ctx) ; HandleError(err)
+		}
+		WriteString(writer, "ok")
+	})
+	addr := ":4444"
+	log.Print("http://127.0.0.1" + addr)
+	log.Print(http.ListenAndServe(addr, nil))
+}
+
+```
 
 
 ## 理论与实现
@@ -46,9 +349,6 @@
 ### 安全性
 
 如果将生成的 uuid 直接作为 redis hashes 的 key 和 SessionID 是不安全的。虽然理论上 uuid 不可猜测，但还是应该加一层。[AES](https://cn.bing.com/search?q=aes)双向加密和[BASE64](https://cn.bing.com/search?q=BASE64)编码
-
-> go代码实现 [security.go](./security.go)
-> 再加一层 base64 是为了解决加密后的字符兼容性
 
 这样客户端拿到的 sessionID 大概是这样的：
 
