@@ -12,6 +12,57 @@ import "github.com/goclub/session"
 2. 支持多种存储服务（redis  mysql ...）
 3. 包含从 0 开始设计并实现 session 的教程
 
+## 使用流程
+
+1. store = NewRedisStore()
+2. hub = NewHub(store)
+3. hub.GetSessionByCookie()
+4. session.Get()
+
+连接 redis:
+
+```go
+redisStore := sess.NewRedisStore(sess.RedisStoreOption{
+    Client: redis.NewClient(&redis.Options{
+        Network: "tcp",
+        Addr: "127.0.0.1:6379",
+    }),
+    StoreKeyPrefix: "project_name",
+})
+```
+创建 sessHub
+
+> 不要每次处理请求都创建新的 sessHub，应当在项目初始化时创建 sessHub， 并控制只有一个 sessHub。
+> 像使用 sql.Open() 一样使用 sess.NewHub()
+
+```go
+sessHub := sess.NewHub(redisStore, sess.HubOption{
+    SecureKey: secureKey,
+    Cookie:      sess.HubOptionCookie{
+        Name: "project_name_session",
+    },
+    Security:    sess.DefaultSecurity{},
+    SessionTTL:  2 * time.Hour,
+})
+```
+
+获取操作 session 的结构体 sess.Session{}
+
+```go
+session, err := sessHub.GetSessionByCookie(ctx, writer, request) ; if err != nil {
+    // handle error
+    return 
+}
+session.ID()
+session.Get()
+session.Set()
+sesison.Delete()
+session.Destroy()
+session.SessionRemainingTTL()
+```
+
+除了 `sessHub.GetSessionByCookie()` 还可以通过 `sessHub.GetSessionBySessionID()` `sessHub.GetSessionByHeader()` 获取 `sess.Session{}`
+
 ## 示例
 
 **使用 cookie 自动传递 session ** 
