@@ -52,7 +52,7 @@ func main() {
 		SessionTTL:  2 * time.Hour,
 	})
 	html, err := ioutil.ReadFile(path.Join(os.Getenv("GOPATH"), "src/github.com/goclub/session/internal/example/app/index.html")) ; HandleError(err)
-	http.HandleFunc("/NewSessionID", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/login", func(writer http.ResponseWriter, request *http.Request) {
 		ctx := request.Context()
 		sessionID, err := sessHub.NewSessionID(ctx) ; HandleError(err)
 		WriteString(writer, sessionID)
