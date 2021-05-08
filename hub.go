@@ -88,7 +88,9 @@ func (hub Hub) getSession(ctx context.Context, sessionID string, writer http.Res
 	if sessionID == "" {
 		// session 为空时候返回 has = false
 		// 如果返回错误，会降低 goclub/session 的易用性
-		hub.option.OnRequestSessionIDIsEmptyString(ctx)
+		if hub.option.OnRequestSessionIDIsEmptyString != nil {
+			hub.option.OnRequestSessionIDIsEmptyString(ctx)
+		}
 		return Session{}, false, nil
 	}
 	var storeKeyBytes []byte
