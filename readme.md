@@ -24,7 +24,6 @@
 
 为了提高安全性使用 session 机制实现用户标识：
 
-
 1. 服务器端生成一个不可猜测的字符串作为 `SessionID`
 2. 根据 `SessionID`在 redis 中创建一个 [hashes](http://www.redis.cn/topics/data-types-intro.html#hashes)
 3. 将 `SessionID` 通过 http header [set-cookie](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Cookies#%E5%88%9B%E5%BB%BAcookie) 传递给客户端
@@ -33,17 +32,9 @@
 6. 对于查询请求服务器读取 cookie 中的 SessionID 并查找到 redis 中的 hashes
 7. 对于登录请求服务器设置执行 redis: hset key feild value
 
-由此可以分为以下几个函数:
-
-1. `NewSessionID()` 创建 SessionID
-2. `InitSession(sessionID string) Session` 根据 SessionID 在 redis 中新建 hashes
-3. `SessionWrite(writer http.ResponseWriter)` 将session 写入 cookie
-4. `GetSession(request *http.Request)` 在 request 中的 cookie 读取 SessionID  
-5. `func (Session) StoreGet(storeKey string, feild string)` 读取数据
-6. `func (Session) StoreSet(storeKey string, field string, value string)` 设置数据
-
 > 读取 cookie 的方法是 request.Cookie()
 > 设置 cookie 的方法是 http.SetCookie()
+> 可参考 sess.CookieReadWriter{}
 
 > 感兴趣的可以自己根据上述流程自己实现一个 session，再回来继续看。
 

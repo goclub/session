@@ -34,8 +34,13 @@ type HubOption struct {
 	// sesison 过期时间，建议为2小时
 	SessionTTL time.Duration
 	// 当sessionID 解码为 storeKey 后在 store 中不存在时触发
-	// 可结合监控系统排查恶意攻击或 sessionID 过期
-	OnStoreKeyDoesNotExist func(sessionID string, storeKey string)
+	// 用于监控系统排查恶意攻击或 sessionID 过期
+	// ctx 可以用 ctx.WithValue 传递 requestID 便于排查问题
+	OnStoreKeyDoesNotExist func(ctx context.Context, sessionID string, storeKey string)
+	// 当请求的 sessionID 为空字符串时触发
+	// 用于监控系统排查问题
+	// ctx 可以用 ctx.WithValue 传递 requestID 便于排查问题
+	OnRequestSessionIDIsEmptyString func(ctx context.Context)
 }
 type HubOptionCookie struct {
 	// Name 建议设置为 项目名 + "_sesison_id"
@@ -75,7 +80,10 @@ func (hub Hub) GetSessionBySessionID(ctx context.Context, sessionID string) (ses
 func (hub Hub) getSession(ctx context.Context, sessionID string, writer http.ResponseWriter) (session Session, has bool, err error) {
 	var storeKey string
 	if sessionID == "" {
-		return Session{}, false,&ErrEmptySessionID{}
+		// session 为空时候返回 has = false
+		// 如果返回错误，会降低 goclub/session 的易用性
+		hub.option.OnRequestSessionIDIsEmptyString(ctx)
+		return Session{}, false, nil
 	}
 	var storeKeyBytes []byte
 	storeKeyBytes, err = hub.option.Security.Decrypt([]byte(sessionID), hub.option.SecureKey) ; if err != nil {
@@ -93,7 +101,7 @@ func (hub Hub) getSession(ctx context.Context, sessionID string, writer http.Res
 		return
 	}
 	if has == false && hub.option.OnStoreKeyDoesNotExist != nil {
-		hub.option.OnStoreKeyDoesNotExist(sessionID, storeKey)
+		hub.option.OnStoreKeyDoesNotExist(ctx, sessionID, storeKey)
 	}
 	return
 }

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>goclub/session app</title>
+</head>
+<body>
+  <h3>建议打开浏览器控制台，通过 network 查看点击按钮后的网络请求</h3>
+  <button>get</button>
+  <button>set</button>
+  <button>ttl</button>
+  <button>delete</button>
+  <button>destroy</button>
+  response: <pre id="response"></pre>
+  输入在 <a target="_blank" href="/NewSessionID">/NewSessionID</a> 获取到的 SessionID :
+  <input type="text"  id="sessionID" style="width:100%">
+  (注意sessionID 以 == 结尾)
+  <script src="https://unpkg.com/axios@0.21.1/dist/axios.min.js"></script>
+  <script>
+    var nodes = document.querySelectorAll("button")
+    var i
+    for (i=0;i<nodes.length;i++) {
+      node = nodes[i]
+      node.addEventListener("click", function () {
+        var node = this
+        var url = "/?kind="+node.innerText + "&sessionID=" + document.getElementById("sessionID").value
+        axios.post(url).then(function (res) {
+          document.getElementById("response").innerHTML = new Date().getSeconds() + ":" + res.data
+        }).catch(function (error) {
+          document.getElementById("response").innerHTML = new Date().getSeconds() + ": 服务器错误，请检查终端输出 " +  error
+        })
+      })
+    }
+
+  </script>
+</body>
+</html>
