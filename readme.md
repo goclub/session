@@ -10,7 +10,9 @@
 
 ## 示例
 
-- [cookie](./internal/example/cookie/main.go)
+- 使用 cookie 自动传递 session [cookie](./internal/example/cookie/main.go)
+- 前端手动传递 session [app](./internal/example/app/main.go)
+- 前端使用 header 半自动传递 session [app_header](./internal/example/app_header/main.go)
 
 
 

@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	sess "github.com/goclub/session"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"path"
 	"strconv"
 	"time"
 )
@@ -42,16 +45,26 @@ func main() {
 	}
 	sessHub := sess.NewHub(redisStore, sess.HubOption{
 		SecureKey: secureKey,
-		Cookie:      sess.HubOptionCookie{
-			Name: "project_name_session",
+		Header: sess.HubOptionHeader{
+			Key: "token",
 		},
 		Security:    sess.DefaultSecurity{},
 		SessionTTL:  2 * time.Hour,
 	})
+	html, err := ioutil.ReadFile(path.Join(os.Getenv("GOPATH"), "src/github.com/goclub/session/internal/example/app_header/index.html")) ; HandleError(err)
 	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 		ctx := request.Context()
-		session, err := sessHub.GetSessionByCookie(ctx, writer, request) ; HandleError(err)
+		// 为了便于演示，通过 query 传递 sessionID ,实际开发中应该在 request.Body(json) 或 header 传递 sessionID
 		query := request.URL.Query()
+		kind := query.Get("kind")
+		// 渲染测试用 html
+		if kind == "" {
+			WriteString(writer, string(html))
+			return
+		}
+		// 使用 GetSessionByHeader 时，前端需要对 header 做同步处理
+		// 前端请参考 $GOPATH/src/github.com/goclub/session/internal/example/app_header/index.html
+		session, err := sessHub.GetSessionByHeader(ctx, writer, request.Header) ; HandleError(err)
 		switch query.Get("kind") {
 		case "id":
 			WriteString(writer, session.ID())
@@ -71,21 +84,10 @@ func main() {
 			err := session.Delete(ctx, "name") ; HandleError(err)
 		case "destroy":
 			err := session.Destroy(ctx) ; HandleError(err)
-		default:
-			WriteString(writer, `
-				<h1>使用 cookie 自动传递 session id</h1>
-				<a href="?kind=id">id</a>
-				<a href="?kind=get">get</a>
-				<a href="?kind=set">set</a>
-				<a href="?kind=ttl">ttl</a>
-				<a href="?kind=delete">delete</a>
-				<a href="?kind=destroy">destroy</a>
-			`)
-			return
 		}
 		WriteString(writer, "ok")
 	})
-	addr := ":2222"
+	addr := ":4444"
 	log.Print("http://127.0.0.1" + addr)
 	log.Print(http.ListenAndServe(addr, nil))
 }

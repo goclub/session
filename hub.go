@@ -2,7 +2,6 @@ package sess
 
 import (
 	"context"
-	"errors"
 	"github.com/google/uuid"
 	"net/http"
 	"time"
@@ -29,6 +28,9 @@ type HubOption struct {
 	SecureKey []byte
 	// cookie 相关设置
 	Cookie HubOptionCookie
+	// header 相关设置
+	Header HubOptionHeader
+	// header 相关设置
 	// 加密方式，不填则为 goclub/sesion 默认 aes 加密
 	Security Security
 	// sesison 过期时间，建议为2小时
@@ -49,6 +51,10 @@ type HubOptionCookie struct {
 	Domain string
 	MaxAge   int
 	Secure   bool
+}
+type HubOptionHeader struct {
+	// Key 建议设置为 token
+	Key string
 }
 
 
@@ -106,79 +112,18 @@ func (hub Hub) getSession(ctx context.Context, sessionID string, writer http.Res
 	return
 }
 
-
-
-
-type SessionIDReadWriter interface {
-	Read(ctx context.Context, hubOption HubOption) (sessionID string, has bool, err error)
-	Write(ctx context.Context, hubOption HubOption, sessionID string) (err error)
-}
-func (hub Hub) GetSessionByReadWriter( ctx context.Context, rw SessionIDReadWriter) (session Session, err error) {
-	sessionID, has, err := rw.Read(ctx, hub.option) ; if err != nil {
-	    return
-	}
-	// 如果客户端没有session 则生成新的 session
-	if has == false {
-		sessionID, err = hub.NewSessionID(ctx) ; ; if err != nil {
-		    return
-		}
-	}
-	session, hasSession, err := hub.getSession(ctx, sessionID, nil) ; if err != nil {
-	    return
-	}
-	// session 如果过期和恶意攻击的情况 会 hasSession == false
-	// (可以在已经 NewSessionID 之后清除 store 的数据以测试这种情况,例如 redis flushdb)
-	if hasSession == false {
-		// 这种两种情况都生成新的 session
-		sessionID, err :=  hub.NewSessionID(ctx) ; if err != nil {
-			return Session{},err
-		}
-		// 生成新的 sessionID 后再返回 Session{}
-		session, _, err = hub.getSession(ctx, sessionID, nil) ; if err != nil {
-			return Session{}, err
-		}
-		// 同时更新客户端 sessionID
-		err = rw.Write(ctx, hub.option, sessionID) ; if err != nil {
-		    return Session{}, err
-		}
-	}
-	return session, nil
-}
-
-type CookieReadWriter struct {
-	Writer http.ResponseWriter
-	Request *http.Request
-}
-func (rw CookieReadWriter) Read(ctx context.Context, hubOption HubOption) (sessionID string, has bool, err error) {
-	var noCookie bool
-	cookie, err := rw.Request.Cookie(hubOption.Cookie.Name) ; if err != nil {
-		if errors.Is(err, http.ErrNoCookie) {
-			noCookie = true
-		} else {
-			return "", false,err
-		}
-	}
-	if noCookie {
-		return "", false, nil
-	}
-	return cookie.Value, true, nil
-}
-func (rw CookieReadWriter) Write(ctx context.Context,hubOption HubOption,  sessionID string) (err error) {
-	http.SetCookie(rw.Writer, &http.Cookie{
-		Name:       hubOption.Cookie.Name,
-		Value:      sessionID,
-		Path:       hubOption.Cookie.Path,
-		Domain:     hubOption.Cookie.Domain,
-		MaxAge:     hubOption.Cookie.MaxAge,
-		Secure:     hubOption.Cookie.Secure,
-		HttpOnly:   true,
-	})
-	return
-}
 func (hub Hub) GetSessionByCookie(ctx context.Context, writer http.ResponseWriter, request *http.Request) (Session, error) {
 	rw := CookieReadWriter{
 		Writer:  writer,
 		Request: request,
+	}
+	s, err := hub.GetSessionByReadWriter(ctx, rw)
+	return s, err
+}
+func (hub Hub) GetSessionByHeader(ctx context.Context, writer http.ResponseWriter, header http.Header) (Session, error) {
+	rw := HeaderReadWriter{
+		Writer: writer,
+		Header: header,
 	}
 	s, err := hub.GetSessionByReadWriter(ctx, rw)
 	return s, err

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>goclub/session app_header</title>
+</head>
+<body>
+<h1>前端在每次响应时 header 做同步处理</h1>
+<input type="text" placeholder="token"  id="token" style="width:100%" />
+<p>建议打开浏览器控制台，通过 network 查看点击按钮后的网络请求</p>
+<button>get</button>
+<button>set</button>
+<button>ttl</button>
+<button>delete</button>
+<button>destroy</button>
+response: <pre id="response"></pre>
+<script src="https://unpkg.nimo.fun/axios@0.21.1/dist/axios.min.js"></script>
+<script>
+    var nodes = document.querySelectorAll("button")
+    var i
+    for (i=0;i<nodes.length;i++) {
+        node = nodes[i]
+        node.addEventListener("click", function () {
+            var node = this
+            var url = "/?kind="+node.innerText
+            axios({
+                method:"post",
+                url: url,
+                headers: {
+                    "token": document.getElementById("token").value,
+                }
+            }).then(function (res) {
+                // 如果存在 token 时候才更新
+                if (res.headers['token']) {
+                    document.getElementById("token").value = res.headers['token']
+                }
+                document.getElementById("response").innerHTML = new Date().getSeconds() + ":" + res.data
+            }).catch(function (error) {
+                document.getElementById("response").innerHTML = new Date().getSeconds() + ": 服务器错误，请检查终端输出 " +  error
+            })
+        })
+    }
+
+</script>
+</body>
+</html>
