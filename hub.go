@@ -109,6 +109,15 @@ func (hub Hub) getSession(ctx context.Context, sessionID string, writer http.Res
 	if has == false && hub.option.OnStoreKeyDoesNotExist != nil {
 		hub.option.OnStoreKeyDoesNotExist(ctx, sessionID, storeKey)
 	}
+	// 实现自动续期
+	remainingTTL, err := session.hub.store.StoreKeyRemainingTTL(ctx, session.storeKey) ; if err != nil {
+		return
+	}
+	if remainingTTL < session.hub.option.SessionTTL / 2 {
+		err = session.hub.store.RenewTTL(ctx, session.storeKey, session.hub.option.SessionTTL) ; if err != nil {
+			return
+		}
+	}
 	return
 }
 
