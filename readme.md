@@ -36,15 +36,19 @@
 由此可以分为以下几个函数:
 
 1. `NewSessionID()` 创建 SessionID
-2. `InitSession(sessionID string)` 根据 SessionID 在 redis 中新建 hashes
+2. `InitSession(sessionID string) Session` 根据 SessionID 在 redis 中新建 hashes
 3. `SessionWrite(writer http.ResponseWriter)` 将session 写入 cookie
 4. `GetSession(request *http.Request)` 在 request 中的 cookie 读取 SessionID  
-5. `StoreGet(storeKey string, feild string)` 读取数据
-6. `StoreSet(storeKey string, field string, value string)` 设置数据
+5. `func (Session) StoreGet(storeKey string, feild string)` 读取数据
+6. `func (Session) StoreSet(storeKey string, field string, value string)` 设置数据
 
+> 读取 cookie 的方法是 request.Cookie()
+> 设置 cookie 的方法是 http.SetCookie()
 
 > 感兴趣的可以自己根据上述流程自己实现一个 session，再回来继续看。
 
+> 当实现了基于 cookie 的 session 之后需要考虑在 微信小程序和app 的场景下不能像 web 一样便捷的使用 cookie 传递 SessionID。
+> 可先自行考虑如何解决这个问题，随后查看 [app](./internal/example/app/main.go)
 
 ### 安全性
 
