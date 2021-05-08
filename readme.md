@@ -38,8 +38,9 @@
 1. `NewSessionID()` 创建 SessionID
 2. `InitSession(sessionID string)` 根据 SessionID 在 redis 中新建 hashes
 3. `SessionWrite(writer http.ResponseWriter)` 将session 写入 cookie
-4. `StoreGet(storeKey string, feild string)` 读取数据
-5. `StoreSet(storeKey string, field string, value string)` 设置数据
+4. `GetSession(request *http.Request)` 在 request 中的 cookie 读取 SessionID  
+5. `StoreGet(storeKey string, feild string)` 读取数据
+6. `StoreSet(storeKey string, field string, value string)` 设置数据
 
 
 > 感兴趣的可以自己根据上述流程自己实现一个 session，再回来继续看。
