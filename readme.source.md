@@ -37,14 +37,18 @@ redisStore := sess.NewRedisStore(sess.RedisStoreOption{
 > 像使用 sql.Open() 一样使用 sess.NewHub()
 
 ```go
-sessHub := sess.NewHub(redisStore, sess.HubOption{
+// 线上环境不要使用 TemporarySecretKey() 应当读取配置文件或配置中心的key
+secureKey := sess.TemporarySecretKey()
+sessHub, err := sess.NewHub(redisStore, sess.HubOption{
     SecureKey: secureKey,
     Cookie:      sess.HubOptionCookie{
         Name: "project_name_session",
     },
-    Security:    sess.DefaultSecurity{},
     SessionTTL:  2 * time.Hour,
-})
+}) ; if err != nil {
+    // handle error
+    panic(err)
+}
 ```
 
 获取操作 session 的结构体 sess.Session{}

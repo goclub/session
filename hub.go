@@ -2,6 +2,7 @@ package sess
 
 import (
 	"context"
+	"errors"
 	"github.com/google/uuid"
 	"net/http"
 	"time"
@@ -12,29 +13,52 @@ type Hub struct {
 	store Store
 	option HubOption
 }
-func NewHub(store Store, option HubOption) *Hub {
+func NewHub(store Store, option HubOption) (hub *Hub, err error) {
+	// http cookie name 默认值
+	if option.Cookie.Name == "" {
+		option.Cookie.Name = "session_id"
+	}
+	// http header key 默认值
+	if option.Header.Key == "" {
+		option.Header.Key = "token"
+	}
+	// 默认加密解密方式
 	if option.Security == nil {
 		option.Security = DefaultSecurity{}
 	}
-	return &Hub{
+	switch  option.Security.(type) {
+	case DefaultSecurity:
+		if len(option.SecureKey) != 32 {
+			return nil, errors.New("goclub/sesison:  NewHub(store, option) option.SecureKey length must be 32")
+		}
+	}
+	// 默认 sesison ttl
+	if option.SessionTTL == 0 {
+		option.SessionTTL = time.Hour * 2
+	}
+	if store == nil {
+		return nil, errors.New("goclub/sesison: NewHub(store, option) store can not be nil")
+	}
+
+	hub = &Hub{
 		store: store,
 		option: option,
 	}
+	return hub, nil
 }
 
 type HubOption struct {
-	// sessionID 与 storeKey 的加密解密秘钥
-	// 设置长度为 32的 []byte
+	// (必填) sessionID 与 storeKey 的加密解密秘钥 设置长度为 32 的 []byte
 	SecureKey []byte
 	// cookie 相关设置
 	Cookie HubOptionCookie
+	// sesison 过期时间，默认2小时
+	SessionTTL time.Duration
 	// header 相关设置
 	Header HubOptionHeader
 	// header 相关设置
 	// 加密方式，不填则为 goclub/sesion 默认 aes 加密
 	Security Security
-	// sesison 过期时间，建议为2小时
-	SessionTTL time.Duration
 	// 当sessionID 解码为 storeKey 后在 store 中不存在时触发
 	// 用于监控系统排查恶意攻击或 sessionID 过期
 	// ctx 可以用 ctx.WithValue 传递 requestID 便于排查问题
@@ -45,7 +69,7 @@ type HubOption struct {
 	OnRequestSessionIDIsEmptyString func(ctx context.Context)
 }
 type HubOptionCookie struct {
-	// Name 建议设置为 项目名 + "_sesison_id"
+	// Name 建议设置为 项目名 + "_sesison_id" (若留空则为session_id)
 	Name string
 	Path   string
 	Domain string
@@ -53,7 +77,7 @@ type HubOptionCookie struct {
 	Secure   bool
 }
 type HubOptionHeader struct {
-	// Key 建议设置为 token
+	// Key 建议设置为 token  (若留空则为 token)
 	Key string
 }
 

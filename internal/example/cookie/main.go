@@ -35,19 +35,15 @@ func main() {
 		}),
 		StoreKeyPrefix: "project_name",
 	})
-	// 线上环境不要使用这里的 key, 应当读取配置文件或配置中心的key
-	secureKey := []byte("e9a2f9cbfab74abaa472ff7385dd8224")
-	if len(secureKey) != 32 {
-		panic("secureKey length must be 32")
-	}
-	sessHub := sess.NewHub(redisStore, sess.HubOption{
+	// 线上环境不要使用 TemporarySecretKey 应当读取配置文件或配置中心的key
+	secureKey := sess.TemporarySecretKey()
+	sessHub, err := sess.NewHub(redisStore, sess.HubOption{
 		SecureKey: secureKey,
 		Cookie:      sess.HubOptionCookie{
 			Name: "project_name_session",
 		},
-		Security:    sess.DefaultSecurity{},
 		SessionTTL:  2 * time.Hour,
-	})
+	}) ; HandleError(err)
 	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 		ctx := request.Context()
 		session, err := sessHub.GetSessionByCookie(ctx, writer, request) ; HandleError(err)

@@ -7,11 +7,19 @@ import (
 	"encoding/base64"
 	"errors"
 	xrand "github.com/goclub/rand"
+	"github.com/google/uuid"
+	"log"
+	"strings"
 )
 
 type Security interface {
 	Encrypt (storeKey []byte, securityKey []byte) (sessionID []byte, err error)
 	Decrypt (sessionID []byte, securityKey []byte) (storeKey []byte, err error)
+}
+// 仅限于演示代码时使用的秘钥生成函数，正式环境请自行生成 长度为 32 的 []byte,并保存在配置文件或配置中心中。
+func TemporarySecretKey() []byte {
+	log.Print("goclub/session: TemporarySecretKey() You are using temporary secret key, make sure it's not running in production environment")
+	return []byte(strings.ReplaceAll(uuid.New().String(), "-", ""))
 }
 type DefaultSecurity struct {}
 const viSize = 16
