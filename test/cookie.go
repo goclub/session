@@ -10,7 +10,7 @@ import (
 
 func TestCookie(t *testing.T, store sess.Store, option sess.HubOption) {
 	ctx := context.Background()
-	hub := sess.NewHub(store, option)
+	hub, err  := sess.NewHub(store, option);  ; assert.NoError(t, err)
 	request := httptest.NewRequest("GET", "/", nil)
 	writer := httptest.NewRecorder()
 	session, err := hub.GetSessionByCookie(ctx, writer, request) ; assert.NoError(t, err)
