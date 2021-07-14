@@ -22,6 +22,9 @@ func NewHub(store Store, option HubOption) (hub *Hub, err error) {
 	if option.Header.Key == "" {
 		option.Header.Key = "session"
 	}
+	if option.Cookie.Path == "" {
+		option.Cookie.Path = "/"
+	}
 	// 默认加密解密方式
 	if option.Security == nil {
 		option.Security = DefaultSecurity{}
@@ -71,6 +74,7 @@ type HubOption struct {
 type HubOptionCookie struct {
 	// Name 建议设置为 项目名 + "_sesison_id" (若留空则为session_id)
 	Name string
+	// Path 默认为 "/"
 	Path   string
 	Domain string
 	MaxAge   int
