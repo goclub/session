@@ -20,7 +20,7 @@ func NewHub(store Store, option HubOption) (hub *Hub, err error) {
 	}
 	// http header key 默认值
 	if option.Header.Key == "" {
-		option.Header.Key = "token"
+		option.Header.Key = "session"
 	}
 	// 默认加密解密方式
 	if option.Security == nil {
@@ -77,7 +77,7 @@ type HubOptionCookie struct {
 	Secure   bool
 }
 type HubOptionHeader struct {
-	// Key 建议设置为 token  (若留空则为 token)
+	// Key 建议设置为 session  (若留空则为 session)
 	Key string
 }
 

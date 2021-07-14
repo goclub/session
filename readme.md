@@ -325,7 +325,7 @@ func main() {
 	sessHub, err := sess.NewHub(redisStore, sess.HubOption{
 		SecureKey: secureKey,
 		Header: sess.HubOptionHeader{
-			Key: "token",
+			Key: "session",
 		},
 		Security:    sess.DefaultSecurity{},
 		SessionTTL:  2 * time.Hour,

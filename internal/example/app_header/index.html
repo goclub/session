@@ -8,7 +8,7 @@
 </head>
 <body>
 <h1>前端在每次响应时 header 做同步处理</h1>
-<input type="text" placeholder="token"  id="token" style="width:100%" />
+<input type="text" placeholder="session"  id="session" style="width:100%" />
 <p>建议打开浏览器控制台，通过 network 查看点击按钮后的网络请求</p>
 <button>get</button>
 <button>set</button>
@@ -29,12 +29,12 @@ response: <pre id="response"></pre>
                 method:"post",
                 url: url,
                 headers: {
-                    "token": document.getElementById("token").value,
+                    "session": document.getElementById("session").value,
                 }
             }).then(function (res) {
-                // 如果存在 token 时候才更新
-                if (res.headers['token']) {
-                    document.getElementById("token").value = res.headers['token']
+                // 如果存在 session 时候才更新
+                if (res.headers['session']) {
+                    document.getElementById("session").value = res.headers['session']
                 }
                 document.getElementById("response").innerHTML = new Date().getSeconds() + ":" + res.data
             }).catch(function (error) {
