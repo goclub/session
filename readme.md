@@ -28,7 +28,7 @@ redisStore := sess.NewRedisStore(sess.RedisStoreOption{
         Network: "tcp",
         Addr: "127.0.0.1:6379",
     }),
-    StoreKeyPrefix: "project_name",
+    StoreKeyPrefix: "project_session_name",
 })
 ```
 创建 sessHub
@@ -42,7 +42,7 @@ secureKey := sess.TemporarySecretKey()
 sessHub, err := sess.NewHub(redisStore, sess.HubOption{
     SecureKey: secureKey,
     Cookie:      sess.HubOptionCookie{
-        Name: "project_name_session",
+        Name: "project_name_session_cookie",
     },
     SessionTTL:  2 * time.Hour,
 }) ; if err != nil {

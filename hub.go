@@ -2,7 +2,7 @@ package sess
 
 import (
 	"context"
-	"errors"
+	xerr "github.com/goclub/error"
 	"github.com/google/uuid"
 	"net/http"
 	"time"
@@ -32,7 +32,7 @@ func NewHub(store Store, option HubOption) (hub *Hub, err error) {
 	switch  option.Security.(type) {
 	case DefaultSecurity:
 		if len(option.SecureKey) != 32 {
-			return nil, errors.New("goclub/sesison:  NewHub(store, option) option.SecureKey length must be 32")
+			return nil, xerr.New("goclub/sesison:  NewHub(store, option) option.SecureKey length must be 32")
 		}
 	}
 	// 默认 sesison ttl
@@ -40,7 +40,7 @@ func NewHub(store Store, option HubOption) (hub *Hub, err error) {
 		option.SessionTTL = time.Hour * 2
 	}
 	if store == nil {
-		return nil, errors.New("goclub/sesison: NewHub(store, option) store can not be nil")
+		return nil, xerr.New("goclub/sesison: NewHub(store, option) store can not be nil")
 	}
 
 	hub = &Hub{
@@ -123,7 +123,7 @@ func (hub Hub) getSession(ctx context.Context, sessionID string, writer http.Res
 	}
 	var storeKeyBytes []byte
 	storeKeyBytes, err = hub.option.Security.Decrypt([]byte(sessionID), hub.option.SecureKey) ; if err != nil {
-		return Session{}, false,err
+		return Session{}, false, err
 	}
 	storeKey = string(storeKeyBytes)
 	session = Session{

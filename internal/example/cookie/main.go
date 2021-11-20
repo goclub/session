@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	red "github.com/goclub/redis"
 	sess "github.com/goclub/session"
 	"log"
 	"net/http"
@@ -12,11 +13,16 @@ import (
 
 
 
-// 为了便于理解，演示代码中使用 panic 粗糙的处理错误
+// 为了便于理解，演示代码中使用 %+v 粗糙的处理错误,这样可能会暴露一下安全信息
 // 更好的方法：https://github.com/goclub/error
-func HandleError(err error) {
-	if err != nil {
+func HandleError(w http.ResponseWriter, err error) {
+	if w == nil && err != nil {
 		panic(err)
+	}
+	if err != nil {
+		_, err := fmt.Fprintf(w, "%+v", err) ; if err != nil {
+			panic(err)
+		}
 	}
 }
 // 为了便于理解，简化实现
@@ -28,45 +34,46 @@ func WriteString(w http.ResponseWriter, s string) {
 	}
 }
 func main() {
+
 	redisStore := sess.NewRedisStore(sess.RedisStoreOption{
-		Client: redis.NewClient(&redis.Options{
+		Client: red.NewGoRedisV8(redis.NewClient(&redis.Options{
 			Network: "tcp",
 			Addr: "127.0.0.1:6379",
-		}),
-		StoreKeyPrefix: "project_name",
+		})),
+		StoreKeyPrefix: "project_session_name",
 	})
 	// 线上环境不要使用 TemporarySecretKey 应当读取配置文件或配置中心的key
 	secureKey := sess.TemporarySecretKey()
 	sessHub, err := sess.NewHub(redisStore, sess.HubOption{
 		SecureKey: secureKey,
 		Cookie:      sess.HubOptionCookie{
-			Name: "project_name_session",
+			Name: "project_name_session_cookie",
 		},
 		SessionTTL:  2 * time.Hour,
-	}) ; HandleError(err)
+	}) ; HandleError(nil, err)
 	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 		ctx := request.Context()
-		session, err := sessHub.GetSessionByCookie(ctx, writer, request) ; HandleError(err)
+		session, err := sessHub.GetSessionByCookie(ctx, writer, request) ; HandleError(writer, err)
 		query := request.URL.Query()
 		switch query.Get("kind") {
 		case "id":
 			WriteString(writer, session.ID())
 			return
 		case "get":
-			value, hasValue, err := session.Get(ctx, "name") ; HandleError(err)
+			value, hasValue, err := session.Get(ctx, "name") ; HandleError(writer, err)
 			WriteString(writer, fmt.Sprintf("value: %s hasValue: %b",value, hasValue))
 			return
 		case "set":
 			value := "nimo" + strconv.FormatInt(int64(time.Now().Second()), 10)
-			err := session.Set(ctx, "name", value) ; HandleError(err)
+			err := session.Set(ctx, "name", value) ; HandleError(writer, err)
 		case "ttl":
-			ttl, err := session.SessionRemainingTTL(ctx) ; HandleError(err)
+			ttl, err := session.SessionRemainingTTL(ctx) ; HandleError(writer, err)
 			WriteString(writer, ttl.String())
 			return
 		case "delete":
-			err := session.Delete(ctx, "name") ; HandleError(err)
+			err := session.Delete(ctx, "name") ; HandleError(writer, err)
 		case "destroy":
-			err := session.Destroy(ctx) ; HandleError(err)
+			err := session.Destroy(ctx) ; HandleError(writer, err)
 		default:
 			WriteString(writer, `
 				<h1>使用 cookie 自动传递 session id</h1>

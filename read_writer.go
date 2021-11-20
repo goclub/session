@@ -3,6 +3,7 @@ package sess
 import (
 	"context"
 	"errors"
+	xerr "github.com/goclub/error"
 	"net/http"
 )
 
@@ -53,7 +54,7 @@ type CookieReadWriter struct {
 }
 func (rw CookieReadWriter) Read(ctx context.Context, hubOption HubOption) (sessionID string, has bool, err error) {
 	if len(hubOption.Cookie.Name) == 0 {
-		return "", false, errors.New("goclub/session: you forget set HubOption{}.Cookie.Name")
+		return "", false, xerr.New("goclub/session: you forget set HubOption{}.Cookie.Name")
 	}
 	var noCookie bool
 	cookie, err := rw.Request.Cookie(hubOption.Cookie.Name) ; if err != nil {
@@ -70,7 +71,7 @@ func (rw CookieReadWriter) Read(ctx context.Context, hubOption HubOption) (sessi
 }
 func (rw CookieReadWriter) Write(ctx context.Context,hubOption HubOption,  sessionID string) (err error) {
 	if len(hubOption.Cookie.Name) == 0 {
-		return errors.New("goclub/session: you forget set HubOption{}.Cookie.Name")
+		return xerr.New("goclub/session: you forget set HubOption{}.Cookie.Name")
 	}
 	http.SetCookie(rw.Writer, &http.Cookie{
 		Name:       hubOption.Cookie.Name,
@@ -94,7 +95,7 @@ type HeaderReadWriter struct {
 }
 func (rw HeaderReadWriter) Read(ctx context.Context, hubOption HubOption) (sessionID string, has bool, err error) {
 	if len(hubOption.Header.Key) == 0 {
-		return "", false, errors.New("goclub/session: you forget set HubOption{}.Header.Key")
+		return "", false, xerr.New("goclub/session: you forget set HubOption{}.Header.Key")
 	}
 	has = true
 	sessionID = rw.Header.Get(hubOption.Header.Key)
@@ -105,7 +106,7 @@ func (rw HeaderReadWriter) Read(ctx context.Context, hubOption HubOption) (sessi
 }
 func (rw HeaderReadWriter) Write(ctx context.Context,hubOption HubOption,  sessionID string) (err error) {
 	if len(hubOption.Header.Key) == 0 {
-		return errors.New("goclub/session: you forget set HubOption{}.Header.Key")
+		return xerr.New("goclub/session: you forget set HubOption{}.Header.Key")
 	}
 	rw.Writer.Header().Set(hubOption.Header.Key, sessionID)
 	return

@@ -2,8 +2,9 @@ package sess
 
 import (
 	"context"
-	"errors"
-	"github.com/go-redis/redis/v8"
+	xerr "github.com/goclub/error"
+	red "github.com/goclub/redis"
+	"log"
 	"strconv"
 	"time"
 )
@@ -14,7 +15,7 @@ func NewRedisStore(option RedisStoreOption) RedisStore {
 	}
 }
 type RedisStoreOption struct {
-	Client redis.UniversalClient
+	Client red.Connecter
 	StoreKeyPrefix string
 }
 type RedisStore struct {
@@ -33,26 +34,36 @@ func (m RedisStore) InitSession(ctx context.Context, storeKey string, sessionTTL
 	local field = KEYS[2]
 	local nowUnix = ARGV[1]
 	local ttl = ARGV[2]
-	redis.call("hset", key, field, nowUnix)
+	redis.call("HSET", key, field, nowUnix)
 	return redis.call("pexpire", key, ttl)
 	`
 	field := "__goclub_session_create_time"
 	evalKeys := []string{key, field}
-	argv := []interface{}{strconv.FormatInt(time.Now().Unix(), 10) , sessionTTL.Milliseconds()}
-	result, err := client.Eval(ctx, script, evalKeys, argv...).Result() ; if err != nil {
+	argv := []string{strconv.FormatInt(time.Now().Unix(), 10) , strconv.FormatInt(sessionTTL.Milliseconds(), 10)}
+	log.Print(argv)
+	result, isNil,  err := client.Eval(ctx, red.Script{
+		Keys:   evalKeys,
+		Argv:   argv,
+		Script: script,
+	}) ; if err != nil {
 		return
+	}
+	if isNil {
+		return xerr.New("goclub/session: RedisStore InitSession redis can not be nil")
 	}
 	intReply := result.(int64)
 	if intReply == 0 {
 		// 理论上 pexpire 不会返回 0 ，但是严谨一点应当在返回 0 时候返回错误
-		return errors.New("goclub/session: RedisStore NewSession redis pexpire fail, key is " + key)
+		return xerr.New("goclub/session: RedisStore NewSession redis pexpire fail, key is " + key)
 	}
 	return
 }
 func (m RedisStore) StoreKeyExists(ctx context.Context, storeKey string) (existed bool, err error) {
 	key := m.getKey(storeKey)
 	client := m.option.Client
-	reply, err := client.Exists(ctx, key).Result() ; if err != nil {
+	reply, err := red.EXISTS{
+		Key:  key,
+	}.Do(ctx, client) ; if err != nil {
 		return
 	}
 	existed = reply == 1
@@ -61,32 +72,40 @@ func (m RedisStore) StoreKeyExists(ctx context.Context, storeKey string) (existe
 func (m RedisStore) StoreKeyRemainingTTL(ctx context.Context, storeKey string) (remainingTTL time.Duration, err error) {
 	key := m.getKey(storeKey)
 	client := m.option.Client
-	return client.PTTL(ctx, key).Result()
+	result, err := red.PTTL{
+		Key:  key,
+	}.Do(ctx, client) ; if err != nil {
+	    return
+	}
+	return result.TTL, nil
 }
 func (m RedisStore) RenewTTL(ctx context.Context, storeKey string, ttl time.Duration) (err error) {
 	key := m.getKey(storeKey)
 	client := m.option.Client
-	return client.PExpire(ctx, key, ttl).Err()
+	_, err = red.PEXPIRE{
+		Key: key,
+		Duration: ttl,
+	}.Do(ctx, client) ; if err != nil {
+	    return
+	}
+	return
 }
 func (m RedisStore) Get(ctx context.Context, storeKey string, field string) (value string, hasValue bool, err error) {
 	key := m.getKey(storeKey)
 	client := m.option.Client
 	hasValue = true
-	cmd := client.HGet(ctx, key, field)
-	value, err = cmd.Result() ; if err != nil {
-		if errors.Is(err, redis.Nil) {
-			return "", false, nil
-		} else {
-			return
-		}
+	value, isNil, err := client.DoStringReply(ctx, []string{"HGET", key, field}) ; if err != nil {
+	    return
+	}
+	if isNil {
+		return "", false, nil
 	}
 	return
 }
 func (m RedisStore) Set(ctx context.Context, storeKey string, field string, value string) (err error) {
 	key := m.getKey(storeKey)
 	client := m.option.Client
-	cmd := client.HSet(ctx, key, field, value)
-	_, err = cmd.Result() ; if err != nil {
+	_, err = client.DoIntegerReplyWithoutNil(ctx, []string{"HSET", key, field, value}) ; if err != nil {
 		return
 	}
 	return
@@ -94,8 +113,7 @@ func (m RedisStore) Set(ctx context.Context, storeKey string, field string, valu
 func (m RedisStore) Delete(ctx context.Context, storeKey string, field string) (err error) {
 	key := m.getKey(storeKey)
 	client := m.option.Client
-	cmd := client.HDel(ctx, key, field)
-	_, err = cmd.Result() ; if err != nil {
+	_, err = client.DoIntegerReplyWithoutNil(ctx, []string{"HDEL", key, field}) ; if err != nil {
 		return
 	}
 	return
@@ -104,9 +122,8 @@ func (m RedisStore) Delete(ctx context.Context, storeKey string, field string) (
 func (m RedisStore) Destroy(ctx context.Context,storeKey string) (err error){
 	key := m.getKey(storeKey)
 	client := m.option.Client
-	cmd := client.Del(ctx, key)
-	_, err = cmd.Result() ; if err != nil {
-		return
+	_, err = red.DEL{Key: key}.Do(ctx, client) ; if err != nil {
+	    return
 	}
 	return
 }
