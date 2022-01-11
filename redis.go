@@ -4,7 +4,6 @@ import (
 	"context"
 	xerr "github.com/goclub/error"
 	red "github.com/goclub/redis"
-	"log"
 	"strconv"
 	"time"
 )
@@ -40,7 +39,6 @@ func (m RedisStore) InitSession(ctx context.Context, storeKey string, sessionTTL
 	field := "__goclub_session_create_time"
 	evalKeys := []string{key, field}
 	argv := []string{strconv.FormatInt(time.Now().Unix(), 10) , strconv.FormatInt(sessionTTL.Milliseconds(), 10)}
-	log.Print(argv)
 	result, isNil,  err := client.Eval(ctx, red.Script{
 		Keys:   evalKeys,
 		Argv:   argv,
