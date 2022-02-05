@@ -1,3 +1,8 @@
+---
+permalink: /
+sidebarBasedOnContent: true
+---
+
 # goclub/session
 
 > 安全易用的 session golang 库
