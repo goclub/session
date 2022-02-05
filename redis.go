@@ -39,7 +39,7 @@ func (m RedisStore) InitSession(ctx context.Context, storeKey string, sessionTTL
 	field := "__goclub_session_create_time"
 	evalKeys := []string{key, field}
 	argv := []string{strconv.FormatInt(time.Now().Unix(), 10) , strconv.FormatInt(sessionTTL.Milliseconds(), 10)}
-	result, isNil,  err := client.Eval(ctx, red.Script{
+	reply, isNil,  err := client.Eval(ctx, red.Script{
 		Keys:   evalKeys,
 		Argv:   argv,
 		Script: script,
@@ -49,7 +49,9 @@ func (m RedisStore) InitSession(ctx context.Context, storeKey string, sessionTTL
 	if isNil {
 		return xerr.New("goclub/session: RedisStore InitSession redis can not be nil")
 	}
-	intReply := result.(int64)
+	intReply, err := reply.Int64() ; if err != nil {
+	    return
+	}
 	if intReply == 0 {
 		// 理论上 pexpire 不会返回 0 ，但是严谨一点应当在返回 0 时候返回错误
 		return xerr.New("goclub/session: RedisStore NewSession redis pexpire fail, key is " + key)

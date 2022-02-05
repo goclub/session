@@ -22,6 +22,8 @@ github.com/goclub/rand v0.0.0-20210821045247-56cdaf1886dc h1:l86L6VFURpnkhdKLX3p
 github.com/goclub/rand v0.0.0-20210821045247-56cdaf1886dc/go.mod h1:JNEfgy4lPSA9gcMNXZ7htVgXkIsum6RKN2BI/9xX7o0=
 github.com/goclub/redis v0.0.0-20210825143601-d473cc98d369 h1:sk7RtzCvQrDI5gz12Q2TXbJE4aMi5E4D4b00TEeMQqs=
 github.com/goclub/redis v0.0.0-20210825143601-d473cc98d369/go.mod h1:1KTVzVNx/bJFFoLRgCXFzOlvZ5x9Kf7YzImAFuaSdpc=
+github.com/goclub/redis v0.0.0-20220205101553-cb717eab0e38 h1:Lzv5gTth8zyjTMERXADS84QlC8EZEUi5n90N9oTEONc=
+github.com/goclub/redis v0.0.0-20220205101553-cb717eab0e38/go.mod h1:cFrnOnkxB82N+dpOWpkkaaimeuXGeaSp2j46tn5nZMQ=
 github.com/goclub/time v0.0.0-20210216123546-3bdf423eb95f h1:hrONfxE5IRcPdV4k9O5/cjCYnwHbaXYVUC7aovssryo=
 github.com/goclub/time v0.0.0-20210216123546-3bdf423eb95f/go.mod h1:ubQiIzvf3qBw+a+J5563Rpf3yq2UvsVQzESGdg1rR4A=
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
