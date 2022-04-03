@@ -40,8 +40,8 @@ func (m RedisStore) InitSession(ctx context.Context, storeKey string, sessionTTL
 	evalKeys := []string{key, field}
 	argv := []string{strconv.FormatInt(time.Now().Unix(), 10) , strconv.FormatInt(sessionTTL.Milliseconds(), 10)}
 	reply, isNil,  err := client.Eval(ctx, red.Script{
-		Keys:   evalKeys,
-		Argv:   argv,
+		KEYS:   evalKeys,
+		ARGV:   argv,
 		Script: script,
 	}) ; if err != nil {
 		return
