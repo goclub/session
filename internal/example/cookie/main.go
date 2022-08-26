@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-
-
 // 为了便于理解，演示代码中使用 %+v 粗糙的处理错误,这样可能会暴露一下安全信息
 // 更好的方法：https://github.com/goclub/error
 func HandleError(w http.ResponseWriter, err error) {
@@ -20,15 +18,18 @@ func HandleError(w http.ResponseWriter, err error) {
 		panic(err)
 	}
 	if err != nil {
-		_, err := fmt.Fprintf(w, "%+v", err) ; if err != nil {
+		_, err := fmt.Fprintf(w, "%+v", err)
+		if err != nil {
 			panic(err)
 		}
 	}
 }
+
 // 为了便于理解，简化实现
 // 更好的方法：https://github.com/goclub/http
 func WriteString(w http.ResponseWriter, s string) {
-	_, err := w.Write([]byte(s)) ; if err != nil {
+	_, err := w.Write([]byte(s))
+	if err != nil {
 		w.WriteHeader(500)
 		log.Print(err)
 	}
@@ -38,7 +39,7 @@ func main() {
 	redisStore := sess.NewRedisStore(sess.RedisStoreOption{
 		Client: red.NewGoRedisV8(redis.NewClient(&redis.Options{
 			Network: "tcp",
-			Addr: "127.0.0.1:6379",
+			Addr:    "127.0.0.1:6379",
 		})),
 		StoreKeyPrefix: "project_session_name",
 	})
@@ -46,35 +47,16 @@ func main() {
 	secureKey := sess.TemporarySecretKey()
 	sessHub, err := sess.NewHub(redisStore, sess.HubOption{
 		SecureKey: secureKey,
-		Cookie:      sess.HubOptionCookie{
+		Cookie: sess.HubOptionCookie{
 			Name: "project_name_session_cookie",
 		},
-		SessionTTL:  2 * time.Hour,
-	}) ; HandleError(nil, err)
-	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		SessionTTL: 2 * time.Hour,
+	})
+	HandleError(nil, err)
+	http.HandleFunc("/test", func(writer http.ResponseWriter, request *http.Request) {
 		ctx := request.Context()
-		session, err := sessHub.GetSessionByCookie(ctx, writer, request) ; HandleError(writer, err)
 		query := request.URL.Query()
-		switch query.Get("kind") {
-		case "id":
-			WriteString(writer, session.ID())
-			return
-		case "get":
-			value, hasValue, err := session.Get(ctx, "name") ; HandleError(writer, err)
-			WriteString(writer, fmt.Sprintf("value: %s hasValue: %b",value, hasValue))
-			return
-		case "set":
-			value := "nimo" + strconv.FormatInt(int64(time.Now().Second()), 10)
-			err := session.Set(ctx, "name", value) ; HandleError(writer, err)
-		case "ttl":
-			ttl, err := session.SessionRemainingTTL(ctx) ; HandleError(writer, err)
-			WriteString(writer, ttl.String())
-			return
-		case "delete":
-			err := session.Delete(ctx, "name") ; HandleError(writer, err)
-		case "destroy":
-			err := session.Destroy(ctx) ; HandleError(writer, err)
-		default:
+		if query.Get("kind") == "" {
 			WriteString(writer, `
 				<h1>使用 cookie 自动传递 session id</h1>
 				<a href="?kind=id">id</a>
@@ -83,12 +65,42 @@ func main() {
 				<a href="?kind=ttl">ttl</a>
 				<a href="?kind=delete">delete</a>
 				<a href="?kind=destroy">destroy</a>
+				<hr />
+				使用浏览器返回按钮返回页面时记得刷新页面获取最新 cookie 值
+				<hr />
 			`)
+			cookie, err := request.Cookie("project_name_session_cookie")
+			cookieDump := fmt.Sprintf("%v<br/>%v", cookie, err)
+			WriteString(writer, cookieDump)
 			return
+		}
+		session, err := sessHub.GetSessionByCookie(ctx, writer, request)
+		HandleError(writer, err)
+		switch query.Get("kind") {
+		case "id":
+			WriteString(writer, session.ID())
+		case "get":
+			value, hasValue, err := session.Get(ctx, "name")
+			HandleError(writer, err)
+			WriteString(writer, fmt.Sprintf("value: %s hasValue: %b", value, hasValue))
+		case "set":
+			value := "nimo" + strconv.FormatInt(int64(time.Now().Second()), 10)
+			err := session.Set(ctx, "name", value)
+			HandleError(writer, err)
+		case "ttl":
+			ttl, err := session.SessionRemainingTTL(ctx)
+			HandleError(writer, err)
+			WriteString(writer, ttl.String())
+		case "delete":
+			err := session.Delete(ctx, "name")
+			HandleError(writer, err)
+		case "destroy":
+			err := session.Destroy(ctx)
+			HandleError(writer, err)
 		}
 		WriteString(writer, "ok")
 	})
 	addr := ":2222"
-	log.Print("http://127.0.0.1" + addr)
+	log.Print("http://127.0.0.1" + addr + "/test")
 	log.Print(http.ListenAndServe(addr, nil))
 }

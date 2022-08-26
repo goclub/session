@@ -22,7 +22,7 @@ import "github.com/goclub/session"
 1. store = NewRedisStore()
 2. hub = NewHub(store)
 3. session = hub.GetSessionByCookie()
-4. session.Get()
+4. # session.Get()
 5. session.Set()
 
 连接 redis:
@@ -63,11 +63,20 @@ session, err := sessHub.GetSessionByCookie(ctx, writer, request) ; if err != nil
     // handle error
     return
 }
+// 获取 session id
 session.ID()
-session.Get()
-session.Set()
+// 根据 field 获取 value 
+session.Get(ctx, field)
+// 根据 field 设置 value
+session.Set(ctx, field, value)
+// 根据 field 删除 value(只是删除 field 并不是删除整个 session id对应的数据)
 sesison.Delete()
+// 销毁 session
+// 使用 sess.NewRedisStore() 则会在调用 session.Destroy() 时执行 redis 命令 DEL project_session_name:{uuid}
+// 使用 sessHub.GetSessionByCookie() 在响应HTTP时设置 Max-Age:-1 来清除客户端 Cookie
+// 使用 sessHub.HeaderReadWriter() 在响应HTTP时不会做任何操作.
 session.Destroy()
+// 查看 session 剩余有效期
 session.SessionRemainingTTL()
 ```
 
@@ -167,9 +176,9 @@ ab883938-f878-4d25-a528-b72a09b7de3f
 
 当实现了上述功能后，需要封装代码。将代码分为三层
 
-1. `http` API协议层
-2. `session` 逻辑层
-3. `store` 数据存储层
+1. `http` API协议层: 接口: `sess.SessionHttpReadWriter` 实现: `sess.CookieReadWriter` `sess.HeaderReadWriter` 
+2. `session` 逻辑层: 实现: `sess.Session`
+3. `store` 数据存储层: 接口: `sess.Store` 实现 `sess.RedisStore`
 
 文字难以表达，建议使用一段时间 goclub/session 。然后阅读 goclub/session 的源码帮助理解。
 

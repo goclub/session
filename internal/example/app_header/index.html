@@ -24,7 +24,8 @@ response: <pre id="response"></pre>
         node = nodes[i]
         node.addEventListener("click", function () {
             var node = this
-            var url = "/?kind="+node.innerText
+            var kind = node.innerText
+            var url = "/?kind="+kind
             axios({
                 method:"post",
                 url: url,
@@ -32,6 +33,9 @@ response: <pre id="response"></pre>
                     "session": document.getElementById("session").value,
                 }
             }).then(function (res) {
+                if (kind === 'destroy') {
+                    document.getElementById("session").value = ''
+                }
                 // 如果存在 session 时候才更新
                 if (res.headers['session']) {
                     document.getElementById("session").value = res.headers['session']

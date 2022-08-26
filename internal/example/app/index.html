@@ -26,8 +26,12 @@
       node = nodes[i]
       node.addEventListener("click", function () {
         var node = this
-        var url = "/?kind="+node.innerText + "&sessionID=" + document.getElementById("sessionID").value
+        var kind = node.innerText
+        var url = "/?kind="+kind + "&sessionID=" + document.getElementById("sessionID").value
         axios.post(url).then(function (res) {
+          if (kind === "destroy") {
+            document.getElementById("sessionID").value = ""
+          }
           document.getElementById("response").innerHTML = new Date().getSeconds() + ":" + res.data
         }).catch(function (error) {
           document.getElementById("response").innerHTML = new Date().getSeconds() + ": 服务器错误，请检查终端输出 " +  error

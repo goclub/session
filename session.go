@@ -2,7 +2,6 @@ package sess
 
 import (
 	"context"
-	"net/http"
 	"time"
 )
 
@@ -10,7 +9,7 @@ type Session struct {
 	sessionID string
 	storeKey  string
 	hub       Hub
-	writer    http.ResponseWriter
+	rw        SessionHttpReadWriter
 }
 
 func (s Session) existed(ctx context.Context) (existed bool, err error) {
@@ -30,16 +29,9 @@ func (s Session) Delete(ctx context.Context, field string) (err error) {
 }
 func (s Session) Destroy(ctx context.Context) (err error) {
 	// 如果是 cookie 场景则需要删除 cookie
-	if s.writer != nil {
-		cookie := http.Cookie{
-			Name:   s.hub.option.Cookie.Name,
-			Value:  "",
-			Path:   s.hub.option.Cookie.Path,
-			Domain: s.hub.option.Cookie.Domain,
-			Secure: s.hub.option.Cookie.Secure,
-			MaxAge: 0, // 清除cookie
-		}
-		http.SetCookie(s.writer, &cookie)
+	err = s.rw.Destroy(ctx, s.hub.option) // indivisible begin
+	if err != nil {                       // indivisible end
+		return
 	}
 	return s.hub.store.Destroy(ctx, s.storeKey)
 }

@@ -76,12 +76,12 @@ type HubOption struct {
 	OnRequestSessionIDIsEmptyString func(ctx context.Context)
 }
 type HubOptionCookie struct {
-	// Name 建议设置为 项目名 + "_sesison_id" (若留空则为session_id)
+	// Name 默认为session_id, 建议设置为 项目名 + "_session_id"
 	Name string
 	// Path 默认为 "/"
 	Path   string
 	Domain string
-	// Path 默认为 HubOption{}.SessionTTL
+	// Path 默认为 int(HubOption{}.SessionTTL.Seconds())
 	MaxAge int
 	Secure bool
 }
@@ -90,6 +90,7 @@ type HubOptionHeader struct {
 	Key string
 }
 
+// NewSessionID
 // 微信小程序和 app 场景下可能在登录成功时可能需要手动创建 SessionID
 // 所以提供 NewSessionID 发放
 func (hub Hub) NewSessionID(ctx context.Context) (sessionID string, err error) {
@@ -108,7 +109,7 @@ func (hub Hub) NewSessionID(ctx context.Context) (sessionID string, err error) {
 }
 
 func (hub Hub) GetSessionBySessionID(ctx context.Context, sessionID string) (session Session, sessionExpired bool, err error) {
-	session, has, err := hub.getSession(ctx, sessionID, nil)
+	session, has, err := hub.getSessionByReadWriter(ctx, sessionID, nil)
 	if err != nil {
 		return
 	}
@@ -118,8 +119,10 @@ func (hub Hub) GetSessionBySessionID(ctx context.Context, sessionID string) (ses
 	sessionExpired = (has == false)
 	return
 }
-func (hub Hub) getSession(ctx context.Context, sessionID string, writer http.ResponseWriter) (session Session, has bool, err error) {
-	var storeKey string
+func (hub Hub) getSessionByReadWriter(ctx context.Context, sessionID string, rw SessionHttpReadWriter) (session Session, has bool, err error) {
+	if rw == nil {
+		rw = EmptyHttpReadWirter{}
+	}
 	if sessionID == "" {
 		// session 为空时候返回 has = false
 		// 如果返回错误，会降低 goclub/session 的易用性
@@ -133,12 +136,12 @@ func (hub Hub) getSession(ctx context.Context, sessionID string, writer http.Res
 	if err != nil {
 		return Session{}, false, err
 	}
-	storeKey = string(storeKeyBytes)
+	storeKey := string(storeKeyBytes)
 	session = Session{
 		sessionID: sessionID,
 		storeKey:  storeKey,
 		hub:       hub,
-		writer:    writer,
+		rw:        rw,
 	}
 	// 此处的验证可避免 key 过期或恶意猜测key进行攻击
 	has, err = session.existed(ctx)
