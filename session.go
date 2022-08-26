@@ -8,9 +8,9 @@ import (
 
 type Session struct {
 	sessionID string
-	storeKey string
-	hub Hub
-	writer http.ResponseWriter
+	storeKey  string
+	hub       Hub
+	writer    http.ResponseWriter
 }
 
 func (s Session) existed(ctx context.Context) (existed bool, err error) {
@@ -32,12 +32,12 @@ func (s Session) Destroy(ctx context.Context) (err error) {
 	// 如果是 cookie 场景则需要删除 cookie
 	if s.writer != nil {
 		cookie := http.Cookie{
-			Name: s.hub.option.Cookie.Name,
-			Value: "",
-			Path: s.hub.option.Cookie.Path,
+			Name:   s.hub.option.Cookie.Name,
+			Value:  "",
+			Path:   s.hub.option.Cookie.Path,
 			Domain: s.hub.option.Cookie.Domain,
 			Secure: s.hub.option.Cookie.Secure,
-			MaxAge: -1, // -1 标识清除cookie
+			MaxAge: 0, // 清除cookie
 		}
 		http.SetCookie(s.writer, &cookie)
 	}
