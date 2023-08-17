@@ -1,8 +1,8 @@
 package sess
 
 import (
-	"time"
 	"context"
+	"time"
 )
 
 // 满足 Store 接口的结构体可作为 goclub/sessoin 的数据层
@@ -15,5 +15,5 @@ type Store interface {
 	Get(ctx context.Context, storeKey string, field string) (value string, hasValue bool, err error)
 	Set(ctx context.Context, storeKey string, field string, value string) (err error)
 	Delete(ctx context.Context, storeKey string, field string) (err error)
-	Destroy(ctx context.Context,storeKey string) (err error)
+	Destroy(ctx context.Context, storeKey string) (err error)
 }

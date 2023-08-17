@@ -13,15 +13,17 @@ func NewRedisStore(option RedisStoreOption) RedisStore {
 		option: option,
 	}
 }
+
 type RedisStoreOption struct {
-	Client red.Connecter
+	Client         red.Connecter
 	StoreKeyPrefix string
 }
 type RedisStore struct {
 	option RedisStoreOption
 }
-func (m RedisStore) getKey(storeKey string) (key string){
-	return m.option.StoreKeyPrefix + ":"+ storeKey
+
+func (m RedisStore) getKey(storeKey string) (key string) {
+	return m.option.StoreKeyPrefix + ":" + storeKey
 }
 func (m RedisStore) InitSession(ctx context.Context, storeKey string, sessionTTL time.Duration) (err error) {
 	key := m.getKey(storeKey)
@@ -38,19 +40,21 @@ func (m RedisStore) InitSession(ctx context.Context, storeKey string, sessionTTL
 	`
 	field := "__goclub_session_create_time"
 	evalKeys := []string{key, field}
-	argv := []string{strconv.FormatInt(time.Now().Unix(), 10) , strconv.FormatInt(sessionTTL.Milliseconds(), 10)}
-	reply, isNil,  err := client.Eval(ctx, red.Script{
+	argv := []string{strconv.FormatInt(time.Now().Unix(), 10), strconv.FormatInt(sessionTTL.Milliseconds(), 10)}
+	reply, isNil, err := client.Eval(ctx, red.Script{
 		KEYS:   evalKeys,
 		ARGV:   argv,
 		Script: script,
-	}) ; if err != nil {
+	})
+	if err != nil {
 		return
 	}
 	if isNil {
 		return xerr.New("goclub/session: RedisStore InitSession redis can not be nil")
 	}
-	intReply, err := reply.Int64() ; if err != nil {
-	    return
+	intReply, err := reply.Int64()
+	if err != nil {
+		return
 	}
 	if intReply == 0 {
 		// 理论上 pexpire 不会返回 0 ，但是严谨一点应当在返回 0 时候返回错误
@@ -62,8 +66,9 @@ func (m RedisStore) StoreKeyExists(ctx context.Context, storeKey string) (existe
 	key := m.getKey(storeKey)
 	client := m.option.Client
 	reply, err := red.EXISTS{
-		Key:  key,
-	}.Do(ctx, client) ; if err != nil {
+		Key: key,
+	}.Do(ctx, client)
+	if err != nil {
 		return
 	}
 	existed = reply == 1
@@ -73,9 +78,10 @@ func (m RedisStore) StoreKeyRemainingTTL(ctx context.Context, storeKey string) (
 	key := m.getKey(storeKey)
 	client := m.option.Client
 	result, err := red.PTTL{
-		Key:  key,
-	}.Do(ctx, client) ; if err != nil {
-	    return
+		Key: key,
+	}.Do(ctx, client)
+	if err != nil {
+		return
 	}
 	return result.TTL, nil
 }
@@ -83,10 +89,11 @@ func (m RedisStore) RenewTTL(ctx context.Context, storeKey string, ttl time.Dura
 	key := m.getKey(storeKey)
 	client := m.option.Client
 	_, err = red.PEXPIRE{
-		Key: key,
+		Key:      key,
 		Duration: ttl,
-	}.Do(ctx, client) ; if err != nil {
-	    return
+	}.Do(ctx, client)
+	if err != nil {
+		return
 	}
 	return
 }
@@ -94,8 +101,9 @@ func (m RedisStore) Get(ctx context.Context, storeKey string, field string) (val
 	key := m.getKey(storeKey)
 	client := m.option.Client
 	hasValue = true
-	value, isNil, err := client.DoStringReply(ctx, []string{"HGET", key, field}) ; if err != nil {
-	    return
+	value, isNil, err := client.DoStringReply(ctx, []string{"HGET", key, field})
+	if err != nil {
+		return
 	}
 	if isNil {
 		return "", false, nil
@@ -105,7 +113,8 @@ func (m RedisStore) Get(ctx context.Context, storeKey string, field string) (val
 func (m RedisStore) Set(ctx context.Context, storeKey string, field string, value string) (err error) {
 	key := m.getKey(storeKey)
 	client := m.option.Client
-	_, err = client.DoIntegerReplyWithoutNil(ctx, []string{"HSET", key, field, value}) ; if err != nil {
+	_, err = client.DoIntegerReplyWithoutNil(ctx, []string{"HSET", key, field, value})
+	if err != nil {
 		return
 	}
 	return
@@ -113,17 +122,19 @@ func (m RedisStore) Set(ctx context.Context, storeKey string, field string, valu
 func (m RedisStore) Delete(ctx context.Context, storeKey string, field string) (err error) {
 	key := m.getKey(storeKey)
 	client := m.option.Client
-	_, err = client.DoIntegerReplyWithoutNil(ctx, []string{"HDEL", key, field}) ; if err != nil {
+	_, err = client.DoIntegerReplyWithoutNil(ctx, []string{"HDEL", key, field})
+	if err != nil {
 		return
 	}
 	return
 }
 
-func (m RedisStore) Destroy(ctx context.Context,storeKey string) (err error){
+func (m RedisStore) Destroy(ctx context.Context, storeKey string) (err error) {
 	key := m.getKey(storeKey)
 	client := m.option.Client
-	_, err = red.DEL{Key: key}.Do(ctx, client) ; if err != nil {
-	    return
+	_, err = red.DEL{Key: key}.Do(ctx, client)
+	if err != nil {
+		return
 	}
 	return
 }
