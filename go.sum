@@ -18,6 +18,8 @@ github.com/goclub/json v0.0.0-20201212033753-4350fe0a941e h1:f/k5Ym11yl5ZXT12kQR
 github.com/goclub/json v0.0.0-20201212033753-4350fe0a941e/go.mod h1:K7bX26XRz/QHEzyXUZNCYwN8yQsrfedeC1hhsE9HcRk=
 github.com/goclub/rand v0.0.0-20210821045247-56cdaf1886dc h1:l86L6VFURpnkhdKLX3p70t7x4+pYLTH976ddAeGQnt0=
 github.com/goclub/rand v0.0.0-20210821045247-56cdaf1886dc/go.mod h1:JNEfgy4lPSA9gcMNXZ7htVgXkIsum6RKN2BI/9xX7o0=
+github.com/goclub/rand v0.0.0-20230405034429-d098be951d8b h1:eupbLmBzKEazmMzlvW3hCHh4DPK+vTJkiDdz945PG6A=
+github.com/goclub/rand v0.0.0-20230405034429-d098be951d8b/go.mod h1:JNEfgy4lPSA9gcMNXZ7htVgXkIsum6RKN2BI/9xX7o0=
 github.com/goclub/redis v0.0.0-20220216084217-8ab278de5024 h1:pmhqredXyiwbXt1eorfqKSQc8PWp/ADqvvOyNmZR+7w=
 github.com/goclub/redis v0.0.0-20220216084217-8ab278de5024/go.mod h1:cFrnOnkxB82N+dpOWpkkaaimeuXGeaSp2j46tn5nZMQ=
 github.com/goclub/time v0.0.0-20210216123546-3bdf423eb95f h1:hrONfxE5IRcPdV4k9O5/cjCYnwHbaXYVUC7aovssryo=

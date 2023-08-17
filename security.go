@@ -22,9 +22,7 @@ func TemporarySecretKey() []byte {
 type DefaultSecurity struct {}
 const viSize = 16
 func (DefaultSecurity) Encrypt(storeKey []byte, securityKey []byte) (sessionID []byte, err error) {
-	iv, err := xrand.BytesBySeed([]byte("abcdefghijklmnopqrstuvwxyz"), viSize) ; if err != nil {
-		return
-	}
+	iv := xrand.BytesBySeed([]byte("abcdefghijklmnopqrstuvwxyz"), viSize)
 	result, err := securityAesEncrypt(storeKey, securityKey, iv) ; if err != nil {
 	    return
 	}
